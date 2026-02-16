@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ABC Game">
+<meta name="mobile-web-app-capable" content="yes">
+<title>ABC Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #FFF8E7;
+    --card-shadow: 0 4px 0 rgba(0,0,0,0.12);
+    --pop-shadow: 0 6px 0 rgba(0,0,0,0.15);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    touch-action: manipulation;
+    background: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: env(safe-area-inset-top) 12px 12px 12px;
+  }
+
+  /* ---- Start Screen ---- */
+  .start-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: linear-gradient(145deg, #FFE66D, #FF6B6B, #C084FC, #4ECDC4);
+    background-size: 400% 400%;
+    animation: gradient-party 4s ease infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    transition: opacity 0.5s, transform 0.5s;
+  }
+
+  .start-screen.hidden {
+    opacity: 0;
+    transform: scale(1.1);
+    pointer-events: none;
+  }
+
+  .start-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(52px, 14vw, 100px);
+    color: #fff;
+    text-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    animation: win-bounce 1.5s ease infinite alternate;
+    text-align: center;
+    line-height: 1.1;
+    padding: 0 20px;
+  }
+
+  .start-subtitle {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(18px, 4vw, 28px);
+    color: rgba(255,255,255,0.9);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .start-btn {
+    padding: 22px 60px;
+    border: none;
+    border-radius: 24px;
+    background: #fff;
+    color: #E8453C;
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(28px, 7vw, 44px);
+    cursor: pointer;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+    transition: transform 0.12s;
+    animation: pulse-letter 2s ease-in-out infinite;
+  }
+
+  .start-btn:active {
+    transform: translateY(5px);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+  }
+
+  .start-letters {
+    font-size: clamp(14px, 3vw, 20px);
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 6px;
+    font-family: 'Fredoka', sans-serif;
+  }
+
+  /* ---- Top Bar ---- */
+  .top-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .prompt-area {
+    flex: 1;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .prompt-text {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(20px, 4.5vw, 34px);
+    color: #4A3728;
+    line-height: 1.2;
+  }
+
+  .prompt-letter {
+    display: inline-block;
+    font-size: clamp(30px, 7vw, 52px);
+    color: #E8453C;
+    animation: pulse-letter 1.2s ease-in-out infinite;
+    margin-left: 4px;
+  }
+
+  .prompt-letter.hidden-letter {
+    display: none;
+  }
+
+  .prompt-text.listen-mode {
+    font-size: clamp(22px, 5vw, 36px);
+  }
+
+  @keyframes pulse-letter {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  .top-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #F0E6D2;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.15s;
+  }
+  .top-btn:active { transform: scale(0.9); }
+
+  .help-btn {
+    background: #FFEAA7;
+    font-size: 22px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    color: #E17055;
+  }
+
+  /* ---- Level Badge ---- */
+  .level-badge {
+    width: 100%;
+    text-align: center;
+    padding: 2px 0;
+    flex-shrink: 0;
+  }
+
+  .level-text {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(12px, 2.5vw, 16px);
+    color: #B8A898;
+    font-weight: 600;
+  }
+
+  .level-text span {
+    color: #E8453C;
+  }
+
+  /* ---- Letter Grid ---- */
+  .grid-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 4px 0;
+  }
+
+  .letter-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: clamp(6px, 1.5vw, 12px);
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .letter-btn {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 16px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: clamp(24px, 6vw, 48px);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--pop-shadow);
+    transition: transform 0.12s, box-shadow 0.12s, filter 0.3s;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .letter-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+  }
+
+  .letter-btn.correct-found {
+    filter: saturate(0.3) brightness(1.15);
+    opacity: 0.45;
+    pointer-events: none;
+    transform: scale(0.9);
+  }
+
+  .letter-btn.wrong-shake {
+    animation: shake 0.45s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+
+  .letter-btn.correct-pop {
+    animation: pop-correct 0.5s ease;
+  }
+
+  @keyframes pop-correct {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.3); }
+    60% { transform: scale(0.85); }
+    100% { transform: scale(0.9); }
+  }
+
+  /* ---- Score Stars ---- */
+  .score-bar {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 0 2px 0;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .star {
+    font-size: clamp(14px, 3vw, 22px);
+    transition: transform 0.3s;
+    display: inline-block;
+  }
+
+  .star.earned {
+    animation: star-in 0.4s ease;
+  }
+
+  @keyframes star-in {
+    0% { transform: scale(0) rotate(-90deg); }
+    60% { transform: scale(1.4) rotate(10deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  /* ---- Feedback Overlay ---- */
+  .feedback-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feedback-overlay.show { opacity: 1; }
+
+  .feedback-msg {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(30px, 8vw, 64px);
+    color: #fff;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    animation: feedback-bounce 0.6s ease;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  @keyframes feedback-bounce {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ---- Confetti Canvas ---- */
+  #confetti-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  /* ---- Settings Modal ---- */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .modal-bg.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-box {
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px 24px;
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    transform: scale(0.9);
+    transition: transform 0.25s;
+  }
+
+  .modal-bg.open .modal-box { transform: scale(1); }
+
+  .modal-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 28px;
+    color: #4A3728;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  .modal-label {
+    font-weight: 900;
+    font-size: 14px;
+    color: #8A7A6A;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .voice-select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid #E8DDD0;
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4A3728;
+    background: #FFF8E7;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+
+  .modal-close-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: #5CB85C;
+    color: #fff;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #3d8b3d;
+    transition: transform 0.12s;
+  }
+
+  .modal-close-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #3d8b3d;
+  }
+
+  /* ---- Level Up Overlay ---- */
+  .levelup-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    z-index: 150;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+
+  .levelup-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .levelup-box {
+    background: linear-gradient(135deg, #FFD93D, #FF6B6B);
+    border-radius: 28px;
+    padding: 36px 40px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    animation: feedback-bounce 0.6s ease;
+  }
+
+  .levelup-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(32px, 8vw, 52px);
+    color: #fff;
+    text-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  }
+
+  .levelup-desc {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(16px, 4vw, 22px);
+    color: rgba(255,255,255,0.9);
+    margin-top: 8px;
+  }
+
+  /* ---- Win Screen ---- */
+  .win-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #FFD93D, #FF6B6B, #C084FC, #6BCB77);
+    background-size: 300% 300%;
+    animation: gradient-party 3s ease infinite;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+
+  .win-screen.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @keyframes gradient-party {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .win-text {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(42px, 12vw, 80px);
+    color: #fff;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    animation: win-bounce 1s ease infinite alternate;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  @keyframes win-bounce {
+    0% { transform: scale(1) rotate(-2deg); }
+    100% { transform: scale(1.08) rotate(2deg); }
+  }
+
+  .play-again-btn {
+    margin-top: 30px;
+    padding: 18px 40px;
+    border: none;
+    border-radius: 20px;
+    background: #fff;
+    color: #E8453C;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+    transition: transform 0.12s;
+  }
+
+  .play-again-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+  }
+</style>
+</head>
+<body>
+
+<!-- Start Screen -->
+<div class="start-screen" id="start-screen">
+  <div class="start-title">ABC Game!</div>
+  <div class="start-subtitle">Find all the letters</div>
+  <button class="start-btn" id="start-btn">Tap to Play!</button>
+  <div class="start-letters">A B C D E F G H I J K L M</div>
+</div>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <button class="top-btn help-btn" id="help-btn" aria-label="Help">?</button>
+  <div class="prompt-area">
+    <span class="prompt-text" id="prompt">Find the letter <span class="prompt-letter" id="target-letter">A</span></span>
+  </div>
+  <button class="top-btn" id="gear-btn" aria-label="Settings">&#9881;</button>
+</div>
+
+<!-- Level Badge -->
+<div class="level-badge">
+  <div class="level-text" id="level-text">Level <span id="level-num">1</span> of 6</div>
+</div>
+
+<!-- Score Stars -->
+<div class="score-bar" id="score-bar"></div>
+
+<!-- Letter Grid -->
+<div class="grid-wrap">
+  <div class="letter-grid" id="letter-grid"></div>
+</div>
+
+<!-- Confetti -->
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Feedback Overlay -->
+<div class="feedback-overlay" id="feedback-overlay">
+  <div class="feedback-msg" id="feedback-msg"></div>
+</div>
+
+<!-- Level Up Overlay -->
+<div class="levelup-overlay" id="levelup-overlay">
+  <div class="levelup-box">
+    <div class="levelup-title" id="levelup-title">Level 2!</div>
+    <div class="levelup-desc" id="levelup-desc"></div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal-box">
+    <div class="modal-title">Settings</div>
+    <label class="modal-label">Voice</label>
+    <select class="voice-select" id="voice-select">
+      <option value="">Loading voices...</option>
+    </select>
+    <button class="modal-close-btn" id="modal-close">Let's Play!</button>
+  </div>
+</div>
+
+<!-- Win Screen -->
+<div class="win-screen" id="win-screen">
+  <div class="win-text">You did it! Amazing!</div>
+  <button class="play-again-btn" id="play-again">Play Again!</button>
+</div>
+
+<script>
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+const COLORS = [
+  '#E8453C','#F4A623','#FFD93D','#6BCB77','#4ECDC4',
+  '#45B7D1','#5B8DEF','#C084FC','#F472B6','#FF8A5C',
+  '#A3DE83','#FF6B6B','#7C6FE0','#F9A8D4','#34D399',
+  '#F59E0B','#EF4444','#8B5CF6','#06B6D4','#EC4899',
+  '#10B981','#F97316','#6366F1','#14B8A6','#E879F9','#FB923C'
+];
+
+const PRONUNCIATION = {
+  A: 'Ah',  B: 'Buh', C: 'Kuh', D: 'Duh',  E: 'Eh',
+  F: 'Fuh', G: 'Guh', H: 'Huh', I: 'Ih',   J: 'Juh',
+  K: 'Kuh', L: 'Luh', M: 'Muh', N: 'Nuh',  O: 'Aww',
+  P: 'Puh', Q: 'Kwuh',R: 'Ruh', S: 'Sss',  T: 'Tuh',
+  U: 'Uh',  V: 'Vuh', W: 'Wuh', X: 'Ks',   Y: 'Yuh', Z: 'Zzz'
+};
+
+const CORRECT_PHRASES = [
+  "You got it!", "Amazing!", "Great job!", "Wonderful!", "Hooray!",
+  "You're a star!", "Fantastic!", "Way to go!", "Super!", "Yay!"
+];
+
+const WRONG_PHRASES = [
+  "Oops! Try again!",
+  "Not quite! Keep looking!",
+  "Almost! Try another one!",
+  "Hmm, that's not it!",
+  "Nope! You can do it!"
+];
+
+/*
+  Level definitions:
+  1. Ordered grid, ordered ask, letter shown
+  2. Shuffled grid, ordered ask, letter shown
+  3. Shuffled grid, random ask, letter shown
+  4. Ordered grid, ordered ask, letter HIDDEN
+  5. Shuffled grid, ordered ask, letter HIDDEN
+  6. Shuffled grid, random ask, letter HIDDEN
+*/
+const LEVELS = [
+  { num: 1, shuffleGrid: false, randomAsk: false, hideLetter: false, desc: 'Letters in order' },
+  { num: 2, shuffleGrid: true,  randomAsk: false, hideLetter: false, desc: 'Letters are mixed up!' },
+  { num: 3, shuffleGrid: true,  randomAsk: true,  hideLetter: false, desc: 'Random letters!' },
+  { num: 4, shuffleGrid: false, randomAsk: false, hideLetter: true,  desc: 'Listen carefully!' },
+  { num: 5, shuffleGrid: true,  randomAsk: false, hideLetter: true,  desc: 'Mixed up, listen close!' },
+  { num: 6, shuffleGrid: true,  randomAsk: true,  hideLetter: true,  desc: 'Super challenge!' },
+];
+
+let currentLevel = 0;
+let currentTargetIndex = 0;
+let currentTargetLetter = 'A';
+let askOrder = [...LETTERS];
+let found = new Set();
+let synth = window.speechSynthesis;
+let selectedVoiceURI = '';
+let speaking = false;
+
+// ---- Shuffle Utility ----
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ---- Grid Setup ----
+const grid = document.getElementById('letter-grid');
+
+function buildGrid() {
+  grid.innerHTML = '';
+  const level = LEVELS[currentLevel];
+  const displayOrder = level.shuffleGrid ? shuffle(LETTERS) : [...LETTERS];
+
+  displayOrder.forEach((letter) => {
+    const btn = document.createElement('button');
+    btn.className = 'letter-btn';
+    btn.textContent = letter;
+    btn.dataset.letter = letter;
+    btn.style.background = COLORS[LETTERS.indexOf(letter)];
+    btn.addEventListener('click', () => handleTap(letter, btn));
+    grid.appendChild(btn);
+  });
+}
+
+function buildAskOrder() {
+  const level = LEVELS[currentLevel];
+  askOrder = level.randomAsk ? shuffle(LETTERS) : [...LETTERS];
+}
+
+// ---- Stars ----
+function renderStars() {
+  const bar = document.getElementById('score-bar');
+  bar.innerHTML = '';
+  LETTERS.forEach((_, i) => {
+    const s = document.createElement('span');
+    s.className = 'star';
+    if (i < found.size) {
+      s.textContent = '\u2B50';
+      s.classList.add('earned');
+    } else {
+      s.textContent = '\u2606';
+      s.style.color = '#D4C8B8';
+    }
+    bar.appendChild(s);
+  });
+}
+
+// ---- Level Display ----
+function updateLevelDisplay() {
+  document.getElementById('level-num').textContent = LEVELS[currentLevel].num;
+}
+
+// ---- Speech ----
+function getVoice() {
+  const voices = synth.getVoices();
+  if (selectedVoiceURI) {
+    const match = voices.find(v => v.voiceURI === selectedVoiceURI);
+    if (match) return match;
+  }
+  const enUS = voices.filter(v => v.lang === 'en-US' || v.lang === 'en_US');
+  return enUS[0] || voices[0] || null;
+}
+
+function speak(text, cb) {
+  synth.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const voice = getVoice();
+  if (voice) utter.voice = voice;
+  utter.rate = 0.85;
+  utter.pitch = 1.2;
+  speaking = true;
+
+  let finished = false;
+  const safetyTimer = setTimeout(() => {
+    if (!finished) {
+      finished = true;
+      speaking = false;
+      if (cb) cb();
+    }
+  }, 5000);
+
+  utter.onend = () => {
+    if (!finished) {
+      finished = true;
+      clearTimeout(safetyTimer);
+      speaking = false;
+      if (cb) cb();
+    }
+  };
+  utter.onerror = () => {
+    if (!finished) {
+      finished = true;
+      clearTimeout(safetyTimer);
+      speaking = false;
+      if (cb) cb();
+    }
+  };
+  synth.speak(utter);
+}
+
+// iOS workaround
+setInterval(() => {
+  if (synth.speaking) synth.resume();
+}, 250);
+
+function askForLetter(letter) {
+  const level = LEVELS[currentLevel];
+  const targetEl = document.getElementById('target-letter');
+  const promptEl = document.getElementById('prompt');
+
+  currentTargetLetter = letter;
+
+  if (level.hideLetter) {
+    targetEl.classList.add('hidden-letter');
+    promptEl.classList.add('listen-mode');
+    promptEl.childNodes[0].textContent = 'Listen! Find the letter ';
+    speak(`Find the letter ${letter}`);
+  } else {
+    targetEl.classList.remove('hidden-letter');
+    promptEl.classList.remove('listen-mode');
+    promptEl.childNodes[0].textContent = 'Find the letter ';
+    targetEl.textContent = letter;
+    speak(`Find the letter ${letter}`);
+  }
+}
+
+// ---- Help Button ----
+document.getElementById('help-btn').addEventListener('click', () => {
+  if (speaking) return;
+  const letter = currentTargetLetter;
+  const sound = PRONUNCIATION[letter];
+  speak(`${letter} sounds like ${sound}`);
+  showFeedback(`${letter} says "${sound}"`, '#45B7D1');
+});
+
+// ---- Voice Selector ----
+function populateVoices() {
+  const sel = document.getElementById('voice-select');
+  const voices = synth.getVoices();
+  if (!voices.length) return;
+  sel.innerHTML = '';
+  const enUS = voices.filter(v => v.lang === 'en-US' || v.lang === 'en_US');
+  if (!enUS.length) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'No en-US voices found';
+    sel.appendChild(opt);
+    return;
+  }
+  enUS.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.voiceURI;
+    opt.textContent = v.name;
+    sel.appendChild(opt);
+  });
+  if (selectedVoiceURI && enUS.some(v => v.voiceURI === selectedVoiceURI)) {
+    sel.value = selectedVoiceURI;
+  } else {
+    sel.value = enUS[0].voiceURI;
+    selectedVoiceURI = enUS[0].voiceURI;
+  }
+}
+
+synth.onvoiceschanged = populateVoices;
+setTimeout(populateVoices, 300);
+
+document.getElementById('voice-select').addEventListener('change', (e) => {
+  selectedVoiceURI = e.target.value;
+  speak('Hello! This is my voice!');
+});
+
+// ---- Settings Modal ----
+document.getElementById('gear-btn').addEventListener('click', () => {
+  populateVoices();
+  document.getElementById('modal-bg').classList.add('open');
+});
+
+document.getElementById('modal-close').addEventListener('click', () => {
+  document.getElementById('modal-bg').classList.remove('open');
+});
+
+document.getElementById('modal-bg').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    document.getElementById('modal-bg').classList.remove('open');
+  }
+});
+
+// ---- Feedback ----
+function showFeedback(text, color) {
+  const overlay = document.getElementById('feedback-overlay');
+  const msg = document.getElementById('feedback-msg');
+  msg.textContent = text;
+  msg.style.color = color || '#fff';
+  overlay.classList.add('show');
+  setTimeout(() => overlay.classList.remove('show'), 1200);
+}
+
+// ---- Level Up ----
+function showLevelUp(levelNum, desc, cb) {
+  const overlay = document.getElementById('levelup-overlay');
+  document.getElementById('levelup-title').textContent = `Level ${levelNum}!`;
+  document.getElementById('levelup-desc').textContent = desc;
+  overlay.classList.add('show');
+  launchConfetti();
+  speak(`Level ${levelNum}! ${desc}`, () => {
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      if (cb) cb();
+    }, 600);
+  });
+}
+
+// ---- Confetti ----
+const confettiCanvas = document.getElementById('confetti-canvas');
+const ctx = confettiCanvas.getContext('2d');
+let confettiPieces = [];
+let confettiRunning = false;
+
+function resizeCanvas() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function launchConfetti() {
+  confettiPieces = [];
+  const colors = ['#E8453C','#F4A623','#FFD93D','#6BCB77','#45B7D1','#C084FC','#F472B6','#FF8A5C'];
+  for (let i = 0; i < 120; i++) {
+    confettiPieces.push({
+      x: Math.random() * confettiCanvas.width,
+      y: -20 - Math.random() * 200,
+      w: 8 + Math.random() * 8,
+      h: 6 + Math.random() * 6,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vy: 2 + Math.random() * 4,
+      vx: -2 + Math.random() * 4,
+      rot: Math.random() * 360,
+      rv: -4 + Math.random() * 8,
+      life: 1
+    });
+  }
+  if (!confettiRunning) {
+    confettiRunning = true;
+    animateConfetti();
+  }
+}
+
+function animateConfetti() {
+  ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  let alive = 0;
+  confettiPieces.forEach(p => {
+    if (p.life <= 0) return;
+    alive++;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.rot += p.rv;
+    if (p.y > confettiCanvas.height + 20) { p.life = 0; return; }
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot * Math.PI / 180);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = Math.min(1, p.life);
+    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    ctx.restore();
+  });
+  if (alive > 0) {
+    requestAnimationFrame(animateConfetti);
+  } else {
+    confettiRunning = false;
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  }
+}
+
+function bigConfetti() {
+  launchConfetti();
+  setTimeout(launchConfetti, 400);
+  setTimeout(launchConfetti, 800);
+}
+
+// ---- Game Logic ----
+function handleTap(letter, btn) {
+  if (found.has(letter) || speaking) return;
+
+  const target = askOrder[currentTargetIndex];
+
+  if (letter === target) {
+    found.add(letter);
+    btn.classList.add('correct-found', 'correct-pop');
+    const phrase = CORRECT_PHRASES[Math.floor(Math.random() * CORRECT_PHRASES.length)];
+    showFeedback(phrase, '#FFD93D');
+    launchConfetti();
+    renderStars();
+
+    speak(phrase, () => {
+      if (found.size === 26) {
+        // Round complete!
+        if (currentLevel < 5) {
+          // Advance to next level
+          currentLevel++;
+          updateLevelDisplay();
+          showLevelUp(LEVELS[currentLevel].num, LEVELS[currentLevel].desc, () => {
+            startRound();
+          });
+        } else {
+          // At level 6: show win, play again stays at 6
+          bigConfetti();
+          document.getElementById('win-screen').classList.add('show');
+          speak("You found all the letters! You are amazing!");
+        }
+      } else {
+        currentTargetIndex++;
+        askForLetter(askOrder[currentTargetIndex]);
+      }
+    });
+  } else {
+    btn.classList.add('wrong-shake');
+    setTimeout(() => btn.classList.remove('wrong-shake'), 500);
+    const phrase = WRONG_PHRASES[Math.floor(Math.random() * WRONG_PHRASES.length)];
+    showFeedback(phrase, '#FF8A8A');
+    speak(`${phrase} Find the letter ${target}`);
+  }
+}
+
+// ---- Start a Round ----
+function startRound() {
+  found.clear();
+  currentTargetIndex = 0;
+  buildAskOrder();
+  buildGrid();
+  renderStars();
+  setTimeout(() => askForLetter(askOrder[0]), 400);
+}
+
+// ---- Play Again (stays at level 6) ----
+document.getElementById('play-again').addEventListener('click', () => {
+  document.getElementById('win-screen').classList.remove('show');
+  startRound();
+});
+
+// ---- Start Button (unlocks iOS audio) ----
+document.getElementById('start-btn').addEventListener('click', () => {
+  const unlock = new SpeechSynthesisUtterance('');
+  unlock.volume = 0;
+  synth.speak(unlock);
+  synth.getVoices();
+
+  document.getElementById('start-screen').classList.add('hidden');
+
+  setTimeout(() => {
+    populateVoices();
+    updateLevelDisplay();
+    startRound();
+  }, 400);
+});
+
+// ---- Init ----
+renderStars();
+</script>
+</body>
+</html>

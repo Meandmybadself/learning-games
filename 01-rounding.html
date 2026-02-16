@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dragon Vault: Number Quest</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background:#0b1020; color:#e9eefc; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; }
+    .card { background:#111a33; border:1px solid #243159; border-radius:14px; padding:16px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .grow { flex: 1 1 340px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    h2 { margin: 0 0 8px; font-size: 16px; color:#b8c7ff; }
+    .meta { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .pill { padding:6px 10px; border-radius:999px; background:#0e1630; border:1px solid #243159; font-size: 13px; color:#cfe0ff; }
+    .big { font-size: 34px; font-weight: 800; letter-spacing: .5px; }
+    .btns { display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px; }
+    button {
+      background:#1a2a59; border:1px solid #2d3f77; color:#e9eefc;
+      padding:10px 12px; border-radius:12px; font-weight:700; cursor:pointer;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    button.secondary { background:#0e1630; }
+    button.good { background:#14633c; border-color:#1e8b55; }
+    button.bad { background:#6b1e2a; border-color:#a43a4c; }
+    button:disabled { opacity: .55; cursor:not-allowed; }
+    .prompt { margin: 10px 0 6px; }
+    .choices { display:flex; gap:10px; flex-wrap:wrap; }
+    .choice { min-width: 120px; }
+    .small { font-size: 13px; color:#b8c7ff; line-height:1.35; }
+    .log { margin-top: 10px; min-height: 54px; }
+    .log strong { color:#fff; }
+    .divider { height:1px; background:#243159; margin: 12px 0; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    input[type="text"] {
+      width: 100%; padding:10px 12px; border-radius:12px;
+      border:1px solid #2d3f77; background:#0e1630; color:#e9eefc;
+      font-weight:700;
+    }
+    .hearts { letter-spacing: 2px; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#0e1630; border:1px solid #243159; border-radius:8px; padding:2px 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <div class="card grow">
+        <h1>🐉 Dragon Vault: Number Quest 🐱🗡️</h1>
+        <div class="meta">
+          <div class="pill">Score: <span id="score">0</span></div>
+          <div class="pill">High Score: <span id="highScore">0</span></div>
+          <div class="pill">Streak: <span id="streak">0</span></div>
+          <div class="pill">Lives: <span class="hearts" id="lives">❤️❤️❤️</span></div>
+          <div class="pill">Level: <span id="level">1</span></div>
+          <div class="pill">Mode: <span id="modeName">—</span></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="prompt">
+          <h2 id="story">A dragon guards the vault. Your cat familiar whispers… solve the number rune!</h2>
+          <div class="big" id="question">Press Start</div>
+          <div class="small" id="hint"></div>
+        </div>
+
+        <div class="choices" id="choices"></div>
+
+        <div class="btns">
+          <button id="startBtn" class="good">Start Quest</button>
+          <button id="skipBtn" class="secondary" disabled>Skip (-1 life)</button>
+          <button id="resetHighBtn" class="secondary">Reset High Score</button>
+        </div>
+
+        <div class="log" id="log"></div>
+        <div class="small">
+          Tip: Answer fast for bonus. After Level 3, the dragon starts mixing harder runes.
+          Keyboard: <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> picks options.
+        </div>
+      </div>
+
+      <div class="card grow">
+        <h2>🧭 How to Play</h2>
+        <div class="small">
+          You’ll face three kinds of “runes”:
+          <ul>
+            <li><strong>Compare</strong>: pick &gt;, &lt;, or =</li>
+            <li><strong>Order</strong>: pick the correct sorted list</li>
+            <li><strong>Round</strong>: round to nearest 10 / 100 / 1,000 / 10,000</li>
+          </ul>
+          Scoring:
+          <ul>
+            <li>Correct: +10 base</li>
+            <li>Streak bonus: +2 per streak (caps at +20)</li>
+            <li>Speed bonus: up to +10</li>
+            <li>Wrong: lose 1 life, streak resets</li>
+          </ul>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>⚙️ Settings</h2>
+        <div class="grid">
+          <div>
+            <div class="small">Max number</div>
+            <select id="maxNum" style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid #2d3f77; background:#0e1630; color:#e9eefc; font-weight:700;">
+              <option value="1000">1,000</option>
+              <option value="10000">10,000</option>
+              <option value="100000" selected>100,000</option>
+            </select>
+          </div>
+          <div>
+            <div class="small">Difficulty</div>
+            <select id="difficulty" style="width:100%; padding:10px 12px; border-radius:12px; border:1px solid #2d3f77; background:#0e1630; color:#e9eefc; font-weight:700;">
+              <option value="easy">Easy (more spaced numbers)</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard (close numbers)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>🧙 Parent Mini-Guide</h2>
+        <div class="small">
+          If a round is missed, ask:
+          <ul>
+            <li>“What digit is in the rounding place?”</li>
+            <li>“What digit is right after it?”</li>
+            <li>“5 or more: round up, otherwise down.”</li>
+          </ul>
+          For ordering, suggest comparing the <strong>largest place first</strong> (ten-thousands, thousands, hundreds…).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    // ---------- Local Storage ----------
+    const LS_KEY = "dragonVaultHighScore_v1";
+    const loadHigh = () => Number(localStorage.getItem(LS_KEY) || "0");
+    const saveHigh = (v) => localStorage.setItem(LS_KEY, String(v));
+
+    // ---------- State ----------
+    const state = {
+      running: false,
+      score: 0,
+      highScore: loadHigh(),
+      streak: 0,
+      lives: 3,
+      level: 1,
+      questionStart: 0,
+      maxNum: 100000,
+      difficulty: "normal",
+      current: null, // {mode, correctIndex, choices, explain}
+    };
+
+    // ---------- UI ----------
+    const $ = (id) => document.getElementById(id);
+    const scoreEl = $("score");
+    const highEl = $("highScore");
+    const streakEl = $("streak");
+    const livesEl = $("lives");
+    const levelEl = $("level");
+    const modeNameEl = $("modeName");
+    const storyEl = $("story");
+    const questionEl = $("question");
+    const hintEl = $("hint");
+    const choicesEl = $("choices");
+    const logEl = $("log");
+    const startBtn = $("startBtn");
+    const skipBtn = $("skipBtn");
+    const resetHighBtn = $("resetHighBtn");
+    const maxNumSel = $("maxNum");
+    const difficultySel = $("difficulty");
+
+    const render = () => {
+      scoreEl.textContent = String(state.score);
+      highEl.textContent = String(state.highScore);
+      streakEl.textContent = String(state.streak);
+      levelEl.textContent = String(state.level);
+      livesEl.textContent = "❤️".repeat(state.lives) + "🖤".repeat(Math.max(0, 3 - state.lives));
+      skipBtn.disabled = !state.running;
+      maxNumSel.disabled = state.running;
+      difficultySel.disabled = state.running;
+    };
+
+    const setLog = (html) => { logEl.innerHTML = html; };
+
+    // ---------- Utils ----------
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+    const format = (n) => n.toLocaleString("en-US");
+
+    const shuffle = (arr) => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    const unique = (arr) => Array.from(new Set(arr));
+
+    const rounding = (n, place) => {
+      // place is 10,100,1000,10000
+      const half = place / 2;
+      const down = Math.floor(n / place) * place;
+      const up = down + place;
+      return (n - down >= half) ? up : down;
+    };
+
+    const difficultyDelta = () => {
+      // smaller delta = closer numbers = harder
+      switch (state.difficulty) {
+        case "easy": return { minGap: 800, maxGap: 15000 };
+        case "hard": return { minGap: 10, maxGap: 1200 };
+        default: return { minGap: 120, maxGap: 6000 };
+      }
+    };
+
+    const modePick = () => {
+      // weight harder variety as level increases
+      const L = state.level;
+      const bag = [];
+      // Compare appears always
+      bag.push("compare", "compare");
+      // Order more as we go
+      if (L >= 1) bag.push("order");
+      if (L >= 2) bag.push("order");
+      // Round more as we go
+      if (L >= 1) bag.push("round");
+      if (L >= 3) bag.push("round");
+      if (L >= 5) bag.push("round");
+      return bag[randInt(0, bag.length - 1)];
+    };
+
+    // ---------- Question Generators ----------
+    const genCompare = () => {
+      const max = state.maxNum;
+      const { minGap, maxGap } = difficultyDelta();
+
+      let a = randInt(0, max);
+      let b = a + randInt(minGap, maxGap) * (Math.random() < 0.5 ? -1 : 1);
+      b = clamp(b, 0, max);
+
+      // Occasionally allow equality at higher levels
+      if (state.level >= 4 && Math.random() < 0.18) b = a;
+
+      const correct =
+        a > b ? ">" :
+        a < b ? "<" : "=";
+
+      const choices = shuffle([">", "<", "="]);
+      const correctIndex = choices.indexOf(correct);
+
+      const explain = () => {
+        if (a === b) return `${format(a)} and ${format(b)} are the same number.`;
+        const bigger = a > b ? a : b;
+        const smaller = a > b ? b : a;
+        return `Compare place by place: ${format(bigger)} is greater than ${format(smaller)}, so the symbol is <strong>${correct}</strong>.`;
+      };
+
+      return {
+        mode: "compare",
+        modeName: "Compare",
+        story: "A dragon blocks the door. Choose the correct rune to open it!",
+        questionText: `${format(a)}  ?  ${format(b)}`,
+        hint: "Pick the correct symbol: > means greater than, < means less than, = means equal.",
+        choices: choices.map((c) => ({ label: c, value: c })),
+        correctIndex,
+        explain,
+      };
+    };
+
+    const genOrder = () => {
+      const max = state.maxNum;
+      const count = state.level >= 6 ? 5 : (state.level >= 3 ? 4 : 3);
+
+      const nums = [];
+      while (nums.length < count) {
+        nums.push(randInt(0, max));
+      }
+
+      const orderAsc = Math.random() < 0.5;
+      const sorted = nums.slice().sort((x, y) => orderAsc ? x - y : y - x);
+
+      // Create distractors by swapping a couple elements
+      const makeDistractor = (base) => {
+        const a = base.slice();
+        const i = randInt(0, a.length - 2);
+        const j = i + 1;
+        [a[i], a[j]] = [a[j], a[i]];
+        return a;
+      };
+
+      const correctStr = sorted.map(format).join(" , ");
+
+      const distractors = [];
+      while (distractors.length < 3) {
+        const d = makeDistractor(sorted);
+        const s = d.map(format).join(" , ");
+        if (s !== correctStr) distractors.push(s);
+      }
+
+      const options = shuffle(unique([correctStr, ...distractors]).slice(0, 4));
+      const correctIndex = options.indexOf(correctStr);
+
+      const explain = () => {
+        return `Sort by the biggest place first. The correct ${orderAsc ? "ascending" : "descending"} order is <strong>${correctStr}</strong>.`;
+      };
+
+      return {
+        mode: "order",
+        modeName: "Order",
+        story: "Your cat familiar knocks over scrolls—put the numbers in the right order!",
+        questionText: `Order these ${count} numbers (${orderAsc ? "small → big" : "big → small"}):\n${nums.map(format).join("   ")}`
+          .replaceAll("\n", " "),
+        hint: "Compare leftmost digits first (ten-thousands, thousands, hundreds...).",
+        choices: options.map((s) => ({ label: s, value: s })),
+        correctIndex,
+        explain,
+      };
+    };
+
+    const genRound = () => {
+      const max = state.maxNum;
+      const n = randInt(0, max);
+
+      const places = [10, 100, 1000, 10000].filter((p) => p <= Math.max(10, max / 10));
+      const place =
+        state.level <= 2 ? (Math.random() < 0.65 ? 10 : 100) :
+        state.level <= 4 ? places[randInt(0, Math.min(2, places.length - 1))] :
+        places[randInt(0, places.length - 1)];
+
+      const ans = rounding(n, place);
+
+      const deltas = [place, place * 2, Math.floor(place / 2)];
+      const opts = unique([
+        ans,
+        clamp(ans + deltas[0], 0, max + place),
+        clamp(ans - deltas[0], 0, max + place),
+        clamp(ans + deltas[2], 0, max + place),
+        clamp(ans - deltas[2], 0, max + place),
+      ]).slice(0, 4);
+
+      // ensure correct present and we have 4 options
+      if (!opts.includes(ans)) opts[0] = ans;
+      while (opts.length < 4) {
+        const extra = clamp(ans + randInt(-3, 3) * place, 0, max + place);
+        if (!opts.includes(extra)) opts.push(extra);
+      }
+
+      const options = shuffle(opts).map(format);
+      const correctIndex = options.indexOf(format(ans));
+
+      const placeName =
+        place === 10 ? "10" :
+        place === 100 ? "100" :
+        place === 1000 ? "1,000" : "10,000";
+
+      const explain = () => {
+        const nextDigit = Math.floor((n % place) / (place / 10)); // digit right after rounding place
+        const rule = nextDigit >= 5 ? "round up" : "round down";
+        return `Nearest ${placeName}: look at the next digit (${nextDigit}). Since it’s ${nextDigit >= 5 ? "5 or more" : "less than 5"}, you ${rule}. Answer: <strong>${format(ans)}</strong>.`;
+      };
+
+      return {
+        mode: "round",
+        modeName: "Round",
+        story: "A dungeon door needs a rounded rune to unlock!",
+        questionText: `Round ${format(n)} to the nearest ${placeName}`,
+        hint: "Look at the digit right after the rounding place. 5+ rounds up.",
+        choices: options.map((s) => ({ label: s, value: s })),
+        correctIndex,
+        explain,
+      };
+    };
+
+    const nextQuestion = () => {
+      const mode = modePick();
+      const q =
+        mode === "compare" ? genCompare() :
+        mode === "order" ? genOrder() :
+        genRound();
+
+      state.current = q;
+      state.questionStart = Date.now();
+
+      modeNameEl.textContent = q.modeName;
+      storyEl.textContent = q.story;
+      questionEl.textContent = q.questionText;
+      hintEl.textContent = q.hint;
+
+      choicesEl.innerHTML = "";
+      q.choices.forEach((c, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = `${idx + 1}. ${c.label}`;
+        btn.onclick = () => answer(idx);
+        choicesEl.appendChild(btn);
+      });
+
+      setLog(`<span class="small">Choose an option.</span>`);
+      render();
+    };
+
+    // ---------- Scoring ----------
+    const computeAdd = () => {
+      const base = 10;
+      const streakBonus = clamp(state.streak * 2, 0, 20);
+
+      const elapsedMs = Date.now() - state.questionStart;
+      // Speed bonus: 0..10 (best under ~2s, fades by 10s)
+      const speed = clamp(Math.round(10 - (elapsedMs / 1000 - 2) * 1.25), 0, 10);
+
+      return { total: base + streakBonus + speed, base, streakBonus, speed, elapsedMs };
+    };
+
+    const bumpLevel = () => {
+      // Level increases every 60 points, min 1.
+      state.level = Math.max(1, Math.floor(state.score / 60) + 1);
+    };
+
+    const endGame = () => {
+      state.running = false;
+      skipBtn.disabled = true;
+      maxNumSel.disabled = false;
+      difficultySel.disabled = false;
+
+      const isHigh = state.score > state.highScore;
+      if (isHigh) {
+        state.highScore = state.score;
+        saveHigh(state.highScore);
+      }
+
+      setLog(
+        `<div><strong>Quest Over!</strong> Final Score: <strong>${state.score}</strong>. ` +
+        `${isHigh ? "🏆 New High Score!" : ""}</div>` +
+        `<div class="small">Press <strong>Start Quest</strong> to try again.</div>`
+      );
+
+      questionEl.textContent = "Quest Over";
+      hintEl.textContent = "";
+      choicesEl.innerHTML = "";
+      render();
+    };
+
+    const answer = (idx) => {
+      if (!state.running || !state.current) return;
+      const q = state.current;
+
+      const buttons = Array.from(choicesEl.querySelectorAll("button"));
+      buttons.forEach((b) => (b.disabled = true));
+
+      const correct = idx === q.correctIndex;
+
+      if (correct) {
+        state.streak += 1;
+        const add = computeAdd();
+        state.score += add.total;
+        bumpLevel();
+
+        if (state.score > state.highScore) {
+          state.highScore = state.score;
+          saveHigh(state.highScore);
+        }
+
+        setLog(
+          `<div><strong>Correct!</strong> +${add.total} ` +
+          `<span class="small">(base ${add.base} + streak ${add.streakBonus} + speed ${add.speed})</span></div>` +
+          `<div class="small">${q.explain()}</div>`
+        );
+
+        buttons[idx].classList.add("good");
+
+        setTimeout(() => {
+          if (state.running) nextQuestion();
+        }, 900);
+      } else {
+        state.streak = 0;
+        state.lives -= 1;
+
+        buttons[idx].classList.add("bad");
+        buttons[q.correctIndex].classList.add("good");
+
+        setLog(
+          `<div><strong>Oof!</strong> The dragon huffs. The correct answer was <strong>${q.choices[q.correctIndex].label}</strong>.</div>` +
+          `<div class="small">${q.explain()}</div>`
+        );
+
+        render();
+
+        if (state.lives <= 0) {
+          setTimeout(endGame, 900);
+          return;
+        }
+
+        setTimeout(() => {
+          if (state.running) nextQuestion();
+        }, 1200);
+      }
+
+      render();
+    };
+
+    // ---------- Controls ----------
+    const start = () => {
+      state.maxNum = Number(maxNumSel.value);
+      state.difficulty = difficultySel.value;
+
+      state.running = true;
+      state.score = 0;
+      state.streak = 0;
+      state.lives = 3;
+      state.level = 1;
+
+      setLog(`<div class="small">The dungeon torches flare. The vault awakens…</div>`);
+      render();
+      nextQuestion();
+    };
+
+    const skip = () => {
+      if (!state.running) return;
+      state.streak = 0;
+      state.lives -= 1;
+      render();
+      if (state.lives <= 0) endGame();
+      else nextQuestion();
+    };
+
+    startBtn.addEventListener("click", start);
+    skipBtn.addEventListener("click", skip);
+
+    resetHighBtn.addEventListener("click", () => {
+      saveHigh(0);
+      state.highScore = 0;
+      render();
+      setLog(`<div class="small">High score reset.</div>`);
+    });
+
+    // Keyboard shortcuts: 1-4 answer
+    window.addEventListener("keydown", (e) => {
+      if (!state.running) return;
+      const k = e.key;
+      if (k >= "1" && k <= "4") {
+        const idx = Number(k) - 1;
+        const btn = choicesEl.querySelectorAll("button")[idx];
+        if (btn && !btn.disabled) btn.click();
+      }
+    });
+
+    // Initialize
+    highEl.textContent = String(state.highScore);
+    render();
+    setLog(`<div class="small">Press <strong>Start Quest</strong>. High score saves on this device.</div>`);
+  </script>
+</body>
+</html>
