@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Math Match">
+<title>Math Match!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Fredoka', sans-serif;
+    background: #1a1a2e;
+    touch-action: manipulation;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  .game-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Background stars ── */
+  .stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    animation: twinkle 2s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.2; transform: scale(0.8); }
+    100% { opacity: 0.8; transform: scale(1.2); }
+  }
+
+  /* ── Title Screen ── */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.95);
+  }
+
+  .title-screen h1 {
+    font-size: clamp(42px, 8vw, 72px);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 4px 20px rgba(255, 165, 0, 0.5);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .title-screen .subtitle {
+    font-size: clamp(16px, 3vw, 22px);
+    color: #ffd166;
+    font-weight: 500;
+    margin-bottom: 32px;
+  }
+  .title-screen .high-score-display {
+    font-size: clamp(14px, 2.5vw, 18px);
+    color: #9d8aff;
+    font-weight: 500;
+    margin-bottom: 24px;
+  }
+
+  .play-btn {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+    border: none;
+    color: #fff;
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 700;
+    padding: 16px 56px;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(255, 107, 107, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    letter-spacing: 1px;
+  }
+  .play-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 3px 12px rgba(255, 107, 107, 0.3);
+  }
+
+  /* ── Timer Bar ── */
+  .timer-bar-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    background: rgba(0,0,0,0.4);
+    z-index: 20;
+    overflow: hidden;
+  }
+  .timer-bar-track {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.06);
+  }
+  .timer-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #7dffb3, #4de89a);
+    border-radius: 0 8px 8px 0;
+    transition: background 0.3s ease;
+    box-shadow: 0 0 20px rgba(125, 255, 179, 0.35);
+    position: relative;
+  }
+  .timer-bar-fill.warning {
+    background: linear-gradient(90deg, #ffd166, #ffb347);
+    box-shadow: 0 0 20px rgba(255, 209, 102, 0.4);
+  }
+  .timer-bar-fill.danger {
+    background: linear-gradient(90deg, #ff6b6b, #ff4757);
+    box-shadow: 0 0 24px rgba(255, 107, 107, 0.5);
+    animation: bar-pulse 0.45s ease infinite alternate;
+  }
+  @keyframes bar-pulse {
+    to { opacity: 0.7; }
+  }
+  .timer-bar-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(16px, 2.8vw, 22px);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+    pointer-events: none;
+    z-index: 2;
+    gap: 6px;
+  }
+  .timer-bar-text .timer-icon { font-size: 16px; }
+
+  /* ── HUD (stats row below timer bar) ── */
+  .hud {
+    position: absolute;
+    top: 44px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 2vw, 16px);
+    padding: 6px 20px;
+    z-index: 20;
+    pointer-events: none;
+  }
+  .hud-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 4px 14px;
+  }
+  .hud-icon { font-size: 18px; }
+  .hud-label {
+    font-size: clamp(11px, 1.8vw, 13px);
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+  }
+  .hud-value {
+    font-size: clamp(16px, 2.5vw, 22px);
+    font-weight: 700;
+    color: #fff;
+    min-width: 28px;
+    text-align: center;
+  }
+  .score-value { color: #ffd166; }
+  .round-value { color: #9d8aff; }
+  .pairs-value { color: #6bc5ff; }
+
+  /* ── Play Area ── */
+  .play-area {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 80px;
+    z-index: 5;
+  }
+
+  .target-side {
+    flex: 0 0 28%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+  .target-label {
+    font-size: clamp(14px, 2.5vw, 18px);
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .target-number {
+    font-size: clamp(80px, 18vw, 160px);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(125, 255, 179, 0.5), 0 0 80px rgba(125, 255, 179, 0.2);
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  .target-number.pop {
+    animation: pop 0.3s ease;
+  }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  .pairs-remaining {
+    margin-top: 12px;
+    font-size: clamp(13px, 2vw, 16px);
+    color: #6bc5ff;
+    font-weight: 500;
+  }
+
+  .grid-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 12px 20px 12px 0;
+  }
+
+  .number-grid {
+    display: grid;
+    gap: clamp(6px, 1.2vw, 10px);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .grid-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(22px, 5vw, 36px);
+    font-weight: 700;
+    color: #fff;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+  }
+  .grid-cell:active {
+    transform: scale(0.92);
+  }
+  .grid-cell.selected {
+    background: rgba(255, 209, 102, 0.25);
+    border-color: #ffd166;
+    color: #ffd166;
+    transform: scale(1.05);
+    box-shadow: 0 0 16px rgba(255, 209, 102, 0.3);
+  }
+  .grid-cell.correct {
+    background: rgba(125, 255, 179, 0.3);
+    border-color: #7dffb3;
+    color: #7dffb3;
+    animation: correct-flash 0.5s ease forwards;
+    pointer-events: none;
+  }
+  @keyframes correct-flash {
+    0% { transform: scale(1.05); }
+    30% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 0.4; }
+  }
+  .grid-cell.wrong {
+    animation: shake 0.4s ease;
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.2);
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+  .grid-cell.used {
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
+  /* ── Bonus popup ── */
+  .bonus-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 32px;
+    font-weight: 700;
+    color: #7dffb3;
+    text-shadow: 0 2px 12px rgba(125, 255, 179, 0.6);
+    pointer-events: none;
+    z-index: 30;
+    opacity: 0;
+  }
+  .bonus-popup.show {
+    animation: bonus-fly 0.8s ease forwards;
+  }
+  @keyframes bonus-fly {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    30% { transform: translate(-50%, -70%) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -140%) scale(0.8); opacity: 0; }
+  }
+
+  /* ── Game Over ── */
+  .game-over-screen {
+    background: rgba(26, 26, 46, 0.92);
+    backdrop-filter: blur(16px);
+  }
+  .game-over-screen h2 {
+    font-size: clamp(36px, 7vw, 56px);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .game-over-screen .final-score-label {
+    font-size: clamp(14px, 2.5vw, 18px);
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .game-over-screen .final-score {
+    font-size: clamp(54px, 12vw, 96px);
+    font-weight: 700;
+    color: #ffd166;
+    text-shadow: 0 4px 24px rgba(255, 209, 102, 0.4);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+  .new-high-score {
+    font-size: clamp(16px, 3vw, 22px);
+    color: #7dffb3;
+    font-weight: 600;
+    margin-bottom: 8px;
+    animation: pulse-glow 1s ease infinite alternate;
+  }
+  @keyframes pulse-glow {
+    to { text-shadow: 0 0 20px rgba(125, 255, 179, 0.6); }
+  }
+  .high-score-line {
+    font-size: clamp(13px, 2vw, 16px);
+    color: #9d8aff;
+    font-weight: 500;
+    margin-bottom: 24px;
+  }
+  .round-reached {
+    font-size: clamp(13px, 2vw, 16px);
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="game-container">
+  <!-- Stars background -->
+  <div class="stars" id="stars"></div>
+
+  <!-- Title Screen -->
+  <div class="screen title-screen" id="titleScreen">
+    <h1>Math Match!</h1>
+    <div class="subtitle">Find the pairs that add up!</div>
+    <div class="high-score-display" id="titleHighScore"></div>
+    <button class="play-btn" id="playBtn">PLAY</button>
+  </div>
+
+  <!-- Timer Bar -->
+  <div class="timer-bar-container" id="timerBar" style="display:none;">
+    <div class="timer-bar-track">
+      <div class="timer-bar-fill" id="timerBarFill"></div>
+    </div>
+    <div class="timer-bar-text">
+      <span class="timer-icon">⏱</span>
+      <span id="timerDisplay">30</span>s
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud" id="hud" style="display:none;">
+    <div class="hud-item">
+      <span class="hud-icon">🎯</span>
+      <span class="hud-label">Round</span>
+      <span class="hud-value round-value" id="roundDisplay">1</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-icon">🔢</span>
+      <span class="hud-label">Pairs</span>
+      <span class="hud-value pairs-value" id="pairsDisplay">0/1</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-icon">⭐</span>
+      <span class="hud-value score-value" id="scoreDisplay">0</span>
+    </div>
+  </div>
+
+  <!-- Play Area -->
+  <div class="play-area" id="playArea" style="display:none;">
+    <div class="target-side">
+      <div class="target-label">Target</div>
+      <div class="target-number" id="targetNumber">10</div>
+    </div>
+    <div class="grid-side">
+      <div class="number-grid" id="numberGrid"></div>
+    </div>
+  </div>
+
+  <!-- Bonus popup -->
+  <div class="bonus-popup" id="bonusPopup">+2s!</div>
+
+  <!-- Game Over -->
+  <div class="screen game-over-screen hidden" id="gameOverScreen">
+    <h2>Time's Up!</h2>
+    <div class="final-score-label">Score</div>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="new-high-score hidden" id="newHighScore">New High Score!</div>
+    <div class="high-score-line" id="gameOverHighScore"></div>
+    <div class="round-reached" id="roundReached"></div>
+    <button class="play-btn" id="replayBtn">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let timer = 30;
+  let score = 0;
+  let round = 1;
+  let pairsFound = 0;
+  let pairsNeeded = 1;
+  let targetNum = 0;
+  let selectedCells = [];
+  let usedCells = new Set();
+  let timerInterval = null;
+  let gridNumbers = [];
+  let gameActive = false;
+  let maxTimer = 30;
+
+  // ── DOM refs ──
+  const $ = id => document.getElementById(id);
+  const titleScreen = $('titleScreen');
+  const gameOverScreen = $('gameOverScreen');
+  const hud = $('hud');
+  const timerBar = $('timerBar');
+  const timerBarFill = $('timerBarFill');
+  const playArea = $('playArea');
+  const timerDisplay = $('timerDisplay');
+  const scoreDisplay = $('scoreDisplay');
+  const roundDisplay = $('roundDisplay');
+  const pairsDisplay = $('pairsDisplay');
+  const targetNumber = $('targetNumber');
+  const numberGrid = $('numberGrid');
+  const bonusPopup = $('bonusPopup');
+  const finalScore = $('finalScore');
+  const newHighScore = $('newHighScore');
+  const titleHighScore = $('titleHighScore');
+  const gameOverHighScore = $('gameOverHighScore');
+  const roundReached = $('roundReached');
+
+  // ── Stars ──
+  function createStars() {
+    const container = $('stars');
+    for (let i = 0; i < 60; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.animationDelay = (Math.random() * 3) + 's';
+      star.style.width = star.style.height = (2 + Math.random() * 3) + 'px';
+      container.appendChild(star);
+    }
+  }
+  createStars();
+
+  // ── High Score ──
+  function getHighScore() {
+    try { return parseInt(localStorage.getItem('mathMatchHighScore')) || 0; } catch(e) { return 0; }
+  }
+  function setHighScore(val) {
+    try { localStorage.setItem('mathMatchHighScore', val); } catch(e) {}
+  }
+  function showHighScores() {
+    const hs = getHighScore();
+    if (hs > 0) {
+      titleHighScore.textContent = 'High Score: ' + hs;
+      gameOverHighScore.textContent = 'High Score: ' + hs;
+    } else {
+      titleHighScore.textContent = '';
+      gameOverHighScore.textContent = '';
+    }
+  }
+  showHighScores();
+
+  // ── Grid Generation ──
+  function generateRound() {
+    pairsNeeded = round;
+    pairsFound = 0;
+    usedCells = new Set();
+    selectedCells = [];
+    updatePairsDisplay();
+
+    // Target number between 5 and 15 (higher rounds can go a bit higher)
+    const minTarget = 5;
+    const maxTarget = Math.min(9 + round, 18);
+    targetNum = minTarget + Math.floor(Math.random() * (maxTarget - minTarget + 1));
+    targetNumber.textContent = targetNum;
+    targetNumber.classList.remove('pop');
+    void targetNumber.offsetWidth;
+    targetNumber.classList.add('pop');
+
+    // Determine grid size based on pairs needed
+    let gridSize;
+    if (pairsNeeded <= 2) gridSize = 4;
+    else if (pairsNeeded <= 4) gridSize = 5;
+    else gridSize = 6;
+
+    const totalCells = gridSize * gridSize;
+    numberGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+
+    // Generate guaranteed valid pairs
+    gridNumbers = [];
+    const guaranteedPairs = [];
+    for (let i = 0; i < pairsNeeded; i++) {
+      const a = 1 + Math.floor(Math.random() * Math.min(targetNum - 1, 9));
+      const b = targetNum - a;
+      if (b >= 1 && b <= 9) {
+        guaranteedPairs.push(a, b);
+      } else {
+        // fallback: make sure both are single digit
+        const safeA = Math.max(1, Math.min(9, Math.floor(targetNum / 2)));
+        const safeB = targetNum - safeA;
+        guaranteedPairs.push(safeA, safeB);
+      }
+    }
+
+    gridNumbers = [...guaranteedPairs];
+
+    // Fill rest with random 1-9
+    while (gridNumbers.length < totalCells) {
+      gridNumbers.push(1 + Math.floor(Math.random() * 9));
+    }
+
+    // Shuffle
+    for (let i = gridNumbers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [gridNumbers[i], gridNumbers[j]] = [gridNumbers[j], gridNumbers[i]];
+    }
+
+    renderGrid();
+  }
+
+  function renderGrid() {
+    numberGrid.innerHTML = '';
+    gridNumbers.forEach((num, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      cell.textContent = num;
+      cell.dataset.index = i;
+      cell.addEventListener('pointerdown', () => onCellTap(i, cell));
+      numberGrid.appendChild(cell);
+    });
+  }
+
+  // ── Cell Tap ──
+  function onCellTap(index, cell) {
+    if (!gameActive) return;
+    if (usedCells.has(index)) return;
+
+    // If already selected, deselect
+    if (selectedCells.find(s => s.index === index)) {
+      selectedCells = selectedCells.filter(s => s.index !== index);
+      cell.classList.remove('selected');
+      return;
+    }
+
+    // Select
+    selectedCells.push({ index, cell, value: gridNumbers[index] });
+    cell.classList.add('selected');
+
+    // Check if two selected
+    if (selectedCells.length === 2) {
+      const [a, b] = selectedCells;
+      if (a.value + b.value === targetNum) {
+        // Correct!
+        a.cell.classList.remove('selected');
+        b.cell.classList.remove('selected');
+        a.cell.classList.add('correct');
+        b.cell.classList.add('correct');
+        usedCells.add(a.index);
+        usedCells.add(b.index);
+
+        score++;
+        scoreDisplay.textContent = score;
+        timer += 2;
+        maxTimer = Math.max(maxTimer, timer);
+        timerDisplay.textContent = Math.ceil(timer);
+
+        pairsFound++;
+        updatePairsDisplay();
+
+        showBonus();
+
+        selectedCells = [];
+
+        // Check round complete
+        if (pairsFound >= pairsNeeded) {
+          setTimeout(() => {
+            round++;
+            roundDisplay.textContent = round;
+            generateRound();
+          }, 500);
+        }
+      } else {
+        // Wrong
+        a.cell.classList.add('wrong');
+        b.cell.classList.add('wrong');
+        selectedCells = [];
+        setTimeout(() => {
+          a.cell.classList.remove('selected', 'wrong');
+          b.cell.classList.remove('selected', 'wrong');
+        }, 400);
+      }
+    }
+  }
+
+  function updatePairsDisplay() {
+    pairsDisplay.textContent = pairsFound + '/' + pairsNeeded;
+  }
+
+  function showBonus() {
+    bonusPopup.classList.remove('show');
+    void bonusPopup.offsetWidth;
+    bonusPopup.classList.add('show');
+  }
+
+  // ── Timer ──
+  function updateTimerBar() {
+    const pct = Math.max(0, (timer / maxTimer) * 100);
+    timerBarFill.style.width = pct + '%';
+
+    timerBarFill.classList.remove('warning', 'danger');
+    if (timer <= 5) {
+      timerBarFill.classList.add('danger');
+    } else if (timer <= 10) {
+      timerBarFill.classList.add('warning');
+    }
+  }
+
+  function startTimer() {
+    let lastTime = performance.now();
+    timerInterval = setInterval(() => {
+      const now = performance.now();
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+      timer -= delta;
+
+      if (timer <= 0) {
+        timer = 0;
+        timerDisplay.textContent = '0';
+        updateTimerBar();
+        endGame();
+        return;
+      }
+
+      timerDisplay.textContent = Math.ceil(timer);
+      updateTimerBar();
+    }, 50);
+  }
+
+  // ── Game Flow ──
+  function startGame() {
+    timer = 30;
+    maxTimer = 30;
+    score = 0;
+    round = 1;
+    gameActive = true;
+
+    timerDisplay.textContent = '30';
+    scoreDisplay.textContent = '0';
+    roundDisplay.textContent = '1';
+
+    titleScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    timerBar.style.display = 'block';
+    hud.style.display = 'flex';
+    playArea.style.display = 'flex';
+
+    updateTimerBar();
+    generateRound();
+    startTimer();
+  }
+
+  function endGame() {
+    gameActive = false;
+    clearInterval(timerInterval);
+
+    const hs = getHighScore();
+    const isNew = score > hs;
+    if (isNew) setHighScore(score);
+
+    finalScore.textContent = score;
+    roundReached.textContent = 'Reached Round ' + round;
+
+    if (isNew && score > 0) {
+      newHighScore.classList.remove('hidden');
+    } else {
+      newHighScore.classList.add('hidden');
+    }
+
+    showHighScores();
+
+    timerBar.style.display = 'none';
+    hud.style.display = 'none';
+    playArea.style.display = 'none';
+    gameOverScreen.classList.remove('hidden');
+  }
+
+  // ── Event Listeners ──
+  $('playBtn').addEventListener('pointerdown', startGame);
+  $('replayBtn').addEventListener('pointerdown', startGame);
+
+  // Prevent zoom and scrolling
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+</script>
+</body>
+</html>

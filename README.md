@@ -7,6 +7,7 @@ A collection of interactive learning games for kids, hosted on GitHub Pages.
 - **ABC Game** - Learn the alphabet
 - **Add It Up!** - Practice addition
 - **Dragon Vault: Number Quest** - Practice rounding numbers
+- **Math Match!** - Find number pairs that add up to the target
 
 ## Development
 
