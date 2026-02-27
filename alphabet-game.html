@@ -312,8 +312,8 @@
   .feedback-msg {
     font-family: 'Fredoka', sans-serif;
     font-size: clamp(30px, 8vw, 64px);
-    color: #fff;
-    text-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    color: #fff !important;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.4), 0 6px 20px rgba(0,0,0,0.35);
     animation: feedback-bounce 0.6s ease;
     text-align: center;
     padding: 0 20px;
@@ -783,8 +783,13 @@ document.getElementById('help-btn').addEventListener('click', () => {
   if (speaking) return;
   const letter = currentTargetLetter;
   const sound = PRONUNCIATION[letter];
-  speak(`${letter} sounds like ${sound}`);
-  showFeedback(`${letter} says "${sound}"`, '#45B7D1');
+  const level = LEVELS[currentLevel];
+  if (level.hideLetter) {
+    speak(`It sounds like ${sound}`);
+  } else {
+    speak(`${letter} sounds like ${sound}`);
+    showFeedback(`${letter} says "${sound}"`, '#fff');
+  }
 });
 
 // ---- Voice Selector ----
